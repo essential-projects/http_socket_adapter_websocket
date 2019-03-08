@@ -13,7 +13,6 @@
   ],
   "dependencies": {
     "@essential-projects/iam_contracts": "~3.4.0",
-    "@essential-projects/http_contracts": "feature~socket_adapter",
     "@essential-projects/http_socket_adapter_contracts": "feature~add_basic_implementation",
     "@essential-projects/websocket": "feature~add_basic_implementation",
     "@essential-projects/websocket_contracts": "feature~add_basic_implementation",

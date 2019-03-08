@@ -2,7 +2,7 @@ import {IContainer, IInstanceWrapper} from 'addict-ioc';
 import * as http from 'http';
 import {Logger} from 'loggerhythm';
 
-import {IHttpSocketAdapter} from '@essential-projects/http_contracts';
+import {IHttpSocketAdapter} from '@essential-projects/http_socket_adapter_contracts';
 import {IIdentity, IIdentityService} from '@essential-projects/iam_contracts';
 import {EndpointSocketScope} from '@essential-projects/websocket';
 import {IEndpointSocketScope, OnConnectCallback} from '@essential-projects/websocket_contracts';
