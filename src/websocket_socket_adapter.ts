@@ -72,13 +72,17 @@ export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpoint
     if (identityNotSet) {
       logger.error('A WebSocket client attempted to connect without providing an Auth-Token!');
 
-      const handshakeStatusCode: number = 401;
+      const handshakeFailedStatusCode: number = 401;
 
-      return done(false, handshakeStatusCode, 'No auth token provided!');
+      return done(false, handshakeFailedStatusCode, 'No auth token provided!');
     }
 
     const identity: IIdentity = await this._identityService.getIdentity(jwtToken);
     info.req['identity'] = identity; // pass through identity to onConnect
+
+    const handshakeSucceededStatusCode: number = 200;
+
+    return done(true, handshakeSucceededStatusCode);
   }
 
   public async dispose(): Promise<void> {
