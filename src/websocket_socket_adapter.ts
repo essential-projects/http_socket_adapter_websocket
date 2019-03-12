@@ -61,6 +61,11 @@ export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpoint
       verifyClient: this._verifyClient.bind(this),
     });
 
+    this._socketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => {
+      // This was removed in ws@3, so we need this to compensate.
+      (socket as any).upgradeReq = request;
+    });
+
     this._defaultNamespace = new EndpointSocketScope(undefined, this._socketServer);
   }
 
