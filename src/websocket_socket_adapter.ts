@@ -65,9 +65,10 @@ export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpoint
   }
 
   private async _verifyClient(info: VerifyClientInfo, done: VerifyClientCallback): Promise<void> {
-    const token: string = info.req.headers['authorization'];
+    const bearerToken: string = info.req.headers['authorization'];
+    const jwtToken: string = bearerToken.substr('Bearer '.length);
 
-    const identityNotSet: boolean = token === undefined;
+    const identityNotSet: boolean = jwtToken === undefined;
     if (identityNotSet) {
       logger.error('A WebSocket client attempted to connect without providing an Auth-Token!');
 
@@ -76,7 +77,7 @@ export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpoint
       return done(false, handshakeStatusCode, 'No auth token provided!');
     }
 
-    const identity: IIdentity = await this._identityService.getIdentity(token);
+    const identity: IIdentity = await this._identityService.getIdentity(jwtToken);
     info.req['identity'] = identity; // pass through identity to onConnect
   }
 
