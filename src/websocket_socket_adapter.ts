@@ -1,4 +1,3 @@
-import {IContainer, IInstanceWrapper} from 'addict-ioc';
 import * as http from 'http';
 import {Logger} from 'loggerhythm';
 
@@ -23,50 +22,58 @@ interface VerifyClientInfo {
 
 export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpointSocketScope {
 
-  private _container: IContainer<IInstanceWrapper<any>> = undefined;
   private _identityService: IIdentityService;
-  private _httpServer: http.Server = undefined;
   private _socketServer: WebSocket.Server = undefined;
   private _defaultNamespace: IEndpointSocketScope = undefined;
 
   public config: any = undefined;
 
-  constructor(container: IContainer<IInstanceWrapper<any>>, identityService: IIdentityService) {
-    this._container = container;
+  constructor(identityService: IIdentityService) {
     this._identityService = identityService;
   }
 
-  public get container(): IContainer<IInstanceWrapper<any>> {
-    return this._container;
+  private get socketServer(): WebSocket.Server {
+    return this._socketServer;
   }
 
-  public get httpServer(): http.Server {
-    return this._httpServer;
-  }
-
-  public get defaultNamespace(): IEndpointSocketScope {
+  private get defaultNamespace(): IEndpointSocketScope {
     return this._defaultNamespace;
   }
 
-  public get identityService(): IIdentityService {
+  private get identityService(): IIdentityService {
     return this._identityService;
   }
 
   public async initializeAdapter(httpServer: http.Server): Promise<void> {
 
-    this._httpServer = httpServer;
-
     this._socketServer = new WebSocket.Server({
-      server: this._httpServer,
+      server: httpServer,
       verifyClient: this._verifyClient.bind(this),
     });
 
-    this._socketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => {
+    this.socketServer.on('connection', (socket: WebSocket, request: http.IncomingMessage) => {
       // This was removed in ws@3, so we need this to compensate.
       (socket as any).upgradeReq = request;
     });
 
-    this._defaultNamespace = new EndpointSocketScope(undefined, this._socketServer);
+    this._defaultNamespace = new EndpointSocketScope(undefined, this.socketServer);
+  }
+
+  public async dispose(): Promise<void> {
+    this.socketServer.removeAllListeners();
+    this.socketServer.close();
+  }
+
+  public getNamespace(namespaceIdentifier: string): IEndpointSocketScope {
+    return new EndpointSocketScope(namespaceIdentifier, this.socketServer);
+  }
+
+  public onConnect(callback: OnConnectCallback): void {
+    this.defaultNamespace.onConnect(callback);
+  }
+
+  public emit<TMessage>(eventType: string, message: TMessage): void {
+    this.defaultNamespace.emit(eventType, message);
   }
 
   private async _verifyClient(info: VerifyClientInfo, done: VerifyClientCallback): Promise<void> {
@@ -82,27 +89,11 @@ export class WebsocketHttpSocketAdapter implements IHttpSocketAdapter, IEndpoint
       return done(false, handshakeFailedStatusCode, 'No auth token provided!');
     }
 
-    const identity: IIdentity = await this._identityService.getIdentity(jwtToken);
+    const identity: IIdentity = await this.identityService.getIdentity(jwtToken);
     info.req['identity'] = identity; // pass through identity to onConnect
 
     const handshakeSucceededStatusCode: number = 200;
 
     return done(true, handshakeSucceededStatusCode);
-  }
-
-  public async dispose(): Promise<void> {
-    return;
-  }
-
-  public getNamespace(namespaceIdentifier: string): IEndpointSocketScope {
-    return new EndpointSocketScope(namespaceIdentifier, this._socketServer);
-  }
-
-  public onConnect(callback: OnConnectCallback): void {
-    this.defaultNamespace.onConnect(callback);
-  }
-
-  public emit<TMessage>(eventType: string, message: TMessage): void {
-    this.defaultNamespace.emit(eventType, message);
   }
 }
